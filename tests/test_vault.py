@@ -24,10 +24,10 @@ class VaultTests(unittest.TestCase):
         note_path.write_text(text, encoding='utf-8')
 
     def test_read_only_and_service_exclusion(self):
-        self.write_note('AD project.md', '#work_info\nНастройка рабочего сервера для обработки входящих запросов.')
+        self.write_note('AD project.md', '#work_info\nConfigure a work server to handle incoming requests.')
         self.write_note('empty.md', '# Empty\n#work_info')
-        self.write_note('new.md', '#other\nИзучаем алгоритмы поиска пути на графах самостоятельно.')
-        self.write_note('.trash/deleted.md', '#study\nЭта заметка уже удалена и не должна учитываться.')
+        self.write_note('new.md', '#other\nStudy graph pathfinding algorithms independently with practical exercises.')
+        self.write_note('.trash/deleted.md', '#study\nThis note was deleted and must not be included.')
         original_contents = {note_path: note_path.read_bytes() for note_path in self.vault_root.rglob('*.md')}
 
         _, categories, notes, skipped_paths = load_vault(self.vault_root)
@@ -45,24 +45,24 @@ class VaultTests(unittest.TestCase):
         self.write_note('a/011-1.md', '#work_info')
         self.write_note('b/011-1.md', '#work_info')
 
-        with self.assertRaisesRegex(ValueError, 'неоднозначна'):
+        with self.assertRaisesRegex(ValueError, 'ambiguous'):
             load_vault(self.vault_root)
 
     def test_outside_link_is_rejected(self):
         self.write_note('config-f.md', '|Code|Description|\n|[[../outside]]|bad|')
 
-        with self.assertRaisesRegex(ValueError, 'за пределы'):
+        with self.assertRaisesRegex(ValueError, 'outside the vault'):
             load_vault(self.vault_root)
 
     def test_multiple_category_tags_are_not_guessed(self):
         self.write_note('011-1.md', '#work_info #extra')
 
-        with self.assertRaisesRegex(ValueError, 'ровно один'):
+        with self.assertRaisesRegex(ValueError, 'exactly one'):
             load_vault(self.vault_root)
 
     def test_aliases_in_table_and_excluded_templates(self):
         self.write_note('config-f.md', r'|[[011-1\|Work]]|`about work projects, just documentation`|')
-        self.write_note('templates/base.md', '#work_info\nТекст шаблона не должен попадать в набор примеров.')
+        self.write_note('templates/base.md', '#work_info\nTemplate text must not be included in the examples.')
 
         _, categories, notes, _ = load_vault(self.vault_root, exclude=['templates/*'])
 
@@ -74,7 +74,7 @@ class VaultTests(unittest.TestCase):
         self.write_note('config-f.md', '|[[011-1]]|work|')
         self.write_note('011-1.md', '---\ntags: [work_info]\n---\n[[projects/new]]')
         self.write_note('indexes/config-f.md', '|[[../011%2D1]]|`work`|')
-        self.write_note('projects/new.md', 'Бот проверяет состояние рабочих сервисов и сообщает об ошибках.\n'
+        self.write_note('projects/new.md', 'The bot checks work services and reports any errors.\n'
                         '[[../011-1|work_info]]')
 
         _, categories, notes, _ = load_vault(self.vault_root, config='indexes/config-f.md')
@@ -95,7 +95,7 @@ class VaultTests(unittest.TestCase):
     def test_symlink_outside_vault_is_ignored(self):
         with tempfile.TemporaryDirectory() as outside_directory:
             outside_note = Path(outside_directory) / 'private.md'
-            outside_note.write_text('#work_info\nЗаметка вне хранилища не должна попадать в результат.', encoding='utf-8')
+            outside_note.write_text('#work_info\nA note outside the vault must not be included.', encoding='utf-8')
             (self.vault_root / 'external.md').symlink_to(outside_note)
 
             _, _, notes, _ = load_vault(self.vault_root)

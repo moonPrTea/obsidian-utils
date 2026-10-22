@@ -22,7 +22,7 @@ class Note:
 def resolve_note(vault_root: Path, source_path: Path, target: str, note_paths: list[Path]) -> Path:
     target = unquote(target.split('#', 1)[0]).replace('\\', '/')
     if not target:
-        raise ValueError('Пустая ссылка на категорию')
+        raise ValueError('Empty category link')
 
     relative_path = Path(target)
     if relative_path.suffix != '.md':
@@ -31,7 +31,7 @@ def resolve_note(vault_root: Path, source_path: Path, target: str, note_paths: l
     for candidate_path in (source_path.parent / relative_path, vault_root / relative_path):
         resolved_path = candidate_path.resolve()
         if not resolved_path.is_relative_to(vault_root):
-            raise ValueError(f'Ссылка за пределы хранилища: {target}')
+            raise ValueError(f'Link points outside the vault: {target}')
 
         if resolved_path in note_paths:
             return resolved_path
@@ -41,7 +41,7 @@ def resolve_note(vault_root: Path, source_path: Path, target: str, note_paths: l
         matching_paths = [note_path for note_path in note_paths if note_path.name == relative_path.name]
 
     if len(matching_paths) != 1:
-        raise ValueError(f'Не найдена или неоднозначна ссылка: {target}')
+        raise ValueError(f'Missing or ambiguous link: {target}')
 
     return matching_paths[0]
 
@@ -49,7 +49,7 @@ def resolve_note(vault_root: Path, source_path: Path, target: str, note_paths: l
 def load_vault(directory, config: str = DEFAULT_CONFIG_FILE, exclude: Iterable[str] = ()):
     vault_root = Path(directory).expanduser().resolve()
     if not vault_root.is_dir():
-        raise ValueError(f'Нет папки хранилища: {vault_root}')
+        raise ValueError(f'Vault directory does not exist: {vault_root}')
 
     note_paths = sorted(
         note_path for note_path in vault_root.rglob('*.md')
@@ -82,16 +82,16 @@ def load_vault(directory, config: str = DEFAULT_CONFIG_FILE, exclude: Iterable[s
             continue
 
         if len(category_targets) != 1:
-            raise ValueError('В ячейке Code должна быть одна ссылка')
+            raise ValueError('The Code cell must contain exactly one link')
 
         category_path = resolve_note(vault_root, index_path, category_targets[0], note_paths)
         _, category_tags = read_note(category_path)
         if len(category_tags) != 1:
-            raise ValueError(f'{category_path.name}: ожидается ровно один тег категории')
+            raise ValueError(f'{category_path.name}: expected exactly one category tag')
 
         category_tag = next(iter(category_tags))
         if category_tag in categories:
-            raise ValueError(f'Тег #{category_tag} повторяется в справочнике')
+            raise ValueError(f'Tag #{category_tag} appears more than once in the index')
 
         categories[category_tag] = {
             'path': category_path,
@@ -99,7 +99,7 @@ def load_vault(directory, config: str = DEFAULT_CONFIG_FILE, exclude: Iterable[s
         }
 
     if not categories:
-        raise ValueError('В справочнике нет строк таблицы со ссылками на категории')
+        raise ValueError('The index contains no table rows with category links')
 
     service_paths = {index_path} | {category['path'] for category in categories.values()}
     category_names = {service_path.stem for service_path in service_paths}

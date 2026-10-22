@@ -50,11 +50,11 @@ def split_note(raw_text: str, keep_inline: bool = False) -> tuple[str, set[str]]
             None,
         )
         if frontmatter_end is None:
-            raise ValueError('Незакрытый YAML frontmatter')
+            raise ValueError('Unclosed YAML frontmatter')
 
         metadata = yaml.safe_load('\n'.join(note_lines[1:frontmatter_end])) or {}
         if not isinstance(metadata, dict):
-            raise ValueError('YAML frontmatter должен быть словарём')
+            raise ValueError('YAML frontmatter must be a mapping')
 
         raw_text = '\n'.join(note_lines[frontmatter_end + 1:])
 
@@ -63,7 +63,7 @@ def split_note(raw_text: str, keep_inline: bool = False) -> tuple[str, set[str]]
         metadata_tags = TAG_SEPARATOR_PATTERN.split(metadata_tags)
 
     if not isinstance(metadata_tags, list) or any(not isinstance(tag, str) for tag in metadata_tags):
-        raise ValueError('Свойство tags должно быть строкой или списком строк')
+        raise ValueError('The tags property must be a string or a list of strings')
 
     tags = {tag.lstrip('#').casefold() for tag in metadata_tags if tag}
     text = visible_text(raw_text)
